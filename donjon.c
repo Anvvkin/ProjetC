@@ -1,12 +1,12 @@
 #include "donjon.h"
+#include "ennemi.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-/* Structure privee donjon */
 struct sDonjon {
     int w, h;
-    tSalle *cases; /* tableau 1D de taille w*h, index = y*w+x */
+    tSalle *cases;
 };
 
 tDonjon DonjonCreer(int w, int h) {
@@ -37,7 +37,8 @@ int DonjonH(const tDonjon d) { return d ? d->h : 0; }
 int DonjonW(const tDonjon d) { return d ? d->w : 0; }
 
 tSalle DonjonSalle(const tDonjon d, int x, int y) {
-    if (!d || x < 0 || x >= d->w || y < 0 || y >= d->h) return NULL;
+    if (!d || x < 0 || x >= d->w || y < 0 || y >= d->h)
+        return NULL;
     return d->cases[y * d->w + x];
 }
 
@@ -47,12 +48,11 @@ int DonjonCharger(const char *fichier, tDonjon *dj, int *departX, int *departY) 
     FILE *f = fopen(fichier, "r");
     if (!f) return 0;
 
-    char line[512];
+    char ligne[512];
 
-    /* Lecture des dimensions */
-    if (!fgets(line, sizeof(line), f)) { fclose(f); return 0; }
+    if (!fgets(ligne, sizeof(ligne), f)) { fclose(f); return 0; }
     int w, h;
-    if (sscanf(line, "%d %d", &w, &h) != 2) { fclose(f); return 0; }
+    if (sscanf(ligne, "%d %d", &w, &h) != 2) { fclose(f); return 0; }
 
     tDonjon d = DonjonCreer(w, h);
     if (!d) { fclose(f); return 0; }
@@ -60,15 +60,14 @@ int DonjonCharger(const char *fichier, tDonjon *dj, int *departX, int *departY) 
     *departX = 0;
     *departY = 0;
 
-    /* Lecture de la grille */
     for (int y = 0; y < h; y++) {
-        if (!fgets(line, sizeof(line), f)) {
+        if (!fgets(ligne, sizeof(ligne), f)) {
             DonjonLiberer(&d);
             fclose(f);
             return 0;
         }
         for (int x = 0; x < w; x++) {
-            char c = (x < (int)strlen(line)) ? line[x] : '.';
+            char c = (x < (int)strlen(ligne)) ? ligne[x] : '.';
             tSalle s;
             if (c == '#') {
                 s = SalleCreerMur();
@@ -89,32 +88,38 @@ int DonjonCharger(const char *fichier, tDonjon *dj, int *departX, int *departY) 
         }
     }
 
-    /* Lecture des directives optionnelles */
-    while (fgets(line, sizeof(line), f)) {
-        /* Supprimer le retour chariot/saut de ligne */
-        size_t len = strlen(line);
-        while (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r'))
-            line[--len] = '\0';
+    // lecture des directives optionnelles
+    while (fgets(ligne, sizeof(ligne), f)) {
+        size_t len = strlen(ligne);
+        while (len > 0 && (ligne[len-1] == '\n' || ligne[len-1] == '\r'))
+            ligne[--len] = '\0';
 
-        int x, y, n_lu;
+        int x, y, offset;
         char nom[NOM_MAX];
         int qte;
 
-        if (strncmp(line, "DESC ", 5) == 0) {
-            if (sscanf(line + 5, "%d %d %n", &x, &y, &n_lu) >= 2) {
-                char *desc = line + 5 + n_lu;
+        if (strncmp(ligne, "DESC ", 5) == 0) {
+            if (sscanf(ligne + 5, "%d %d %n", &x, &y, &offset) >= 2) {
                 tSalle s = DonjonSalle(d, x, y);
                 if (s && SalleExiste(s))
-                    SalleMajDescription(s, desc);
+                    SalleMajDescription(s, ligne + 5 + offset);
             }
-        } else if (strncmp(line, "ITEM ", 5) == 0) {
-            if (sscanf(line + 5, "%d %d %31s %d", &x, &y, nom, &qte) == 4) {
+        } else if (strncmp(ligne, "ITEM ", 5) == 0) {
+            if (sscanf(ligne + 5, "%d %d %31s %d", &x, &y, nom, &qte) == 4) {
                 tSalle s = DonjonSalle(d, x, y);
                 if (s && SalleExiste(s))
                     InventaireAjouter(SalleObjets(s), nom, qte);
             }
+        } else if (strncmp(ligne, "ENEMY ", 6) == 0) {
+            int pv, atk, def;
+            if (sscanf(ligne + 6, "%d %d %31s %d %d %d", &x, &y, nom, &pv, &atk, &def) == 6) {
+                tSalle s = DonjonSalle(d, x, y);
+                if (s && SalleExiste(s)) {
+                    tEnnemi e = EnnemiCreer(nom, pv, atk, def);
+                    if (e) SalleAjouterEnnemi(s, e);
+                }
+            }
         }
-        /* Directives inconnues : ignorees silencieusement */
     }
 
     fclose(f);

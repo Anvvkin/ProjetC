@@ -32,4 +32,11 @@ int InventaireCompter(const tInventaire inv);
  * "nom1(q1), nom2(q2)" ou "vide" si vide. A liberer par l'appelant. */
 char *InventaireVersChaine(const tInventaire inv);
 
+/* Parcourt tous les objets et appelle visiter(nom, quantite, contexte) pour chacun.
+ * Arrete et renvoie 0 si visiter renvoie 0. Renvoie 1 si parcours complet. */
+int InventaireVisiter(
+    const tInventaire inv,
+    int (*visiter)(const char *nom, int quantite, void *contexte),
+    void *contexte);
+
 #endif
