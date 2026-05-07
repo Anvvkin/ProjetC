@@ -1,49 +1,70 @@
-#include "inventaire.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+#include "inventaire.h"
 
+/* noeud de la liste chainee */
 struct sItem {
     char nom[NOM_MAX];
     int quantite;
     struct sItem *suiv;
 };
 
+/* structure principale de l'inventaire */
 struct sInventaire {
     struct sItem *debut;
 };
 
-tInventaire InventaireCreer(void) {
+
+tInventaire InventaireCreer(void)
+{
     tInventaire inv = malloc(sizeof(struct sInventaire));
-    if (!inv) return NULL;
+    if (inv == NULL)
+        return NULL;
     inv->debut = NULL;
     return inv;
 }
 
-void InventaireVider(tInventaire inv) {
-    if (!inv) return;
-    struct sItem *cur = inv->debut;
-    while (cur) {
-        struct sItem *tmp = cur->suiv;
+
+void InventaireVider(tInventaire inv)
+{
+    struct sItem *cur;
+    struct sItem *tmp;
+
+    if (inv == NULL)
+        return;
+
+    cur = inv->debut;
+    while (cur != NULL) {
+        tmp = cur->suiv;
         free(cur);
         cur = tmp;
     }
     inv->debut = NULL;
 }
 
-void InventaireLiberer(tInventaire *pinv) {
-    if (!pinv || !*pinv) return;
+
+void InventaireLiberer(tInventaire *pinv)
+{
+    if (pinv == NULL || *pinv == NULL)
+        return;
     InventaireVider(*pinv);
     free(*pinv);
     *pinv = NULL;
 }
 
-int InventaireAjouter(tInventaire inv, const char *nom, int qte) {
-    if (!inv || !nom) return 0;
 
-    // vérifier si l'objet est déjà dans la liste
-    struct sItem *cur = inv->debut;
-    while (cur) {
+int InventaireAjouter(tInventaire inv, const char *nom, int qte)
+{
+    struct sItem *cur;
+    struct sItem *nouveau;
+
+    if (inv == NULL || nom == NULL)
+        return 0;
+
+    /* on cherche si l'objet est deja dans la liste */
+    cur = inv->debut;
+    while (cur != NULL) {
         if (strncmp(cur->nom, nom, NOM_MAX) == 0) {
             cur->quantite += qte;
             return 1;
@@ -51,28 +72,43 @@ int InventaireAjouter(tInventaire inv, const char *nom, int qte) {
         cur = cur->suiv;
     }
 
-    // l'objet n'existe pas, on le crée
-    struct sItem *nouveau = malloc(sizeof(struct sItem));
-    if (!nouveau) return 0;
+    /* l'objet n'existe pas, on en cree un nouveau en tete */
+    nouveau = malloc(sizeof(struct sItem));
+    if (nouveau == NULL)
+        return 0;
+
     strncpy(nouveau->nom, nom, NOM_MAX - 1);
     nouveau->nom[NOM_MAX - 1] = '\0';
     nouveau->quantite = qte;
     nouveau->suiv = inv->debut;
     inv->debut = nouveau;
+
     return 1;
 }
 
-int InventaireRetirer(tInventaire inv, const char *nom, int qte) {
-    if (!inv || !nom) return 0;
 
-    struct sItem *prev = NULL;
-    struct sItem *cur = inv->debut;
-    while (cur) {
+int InventaireRetirer(tInventaire inv, const char *nom, int qte)
+{
+    struct sItem *cur;
+    struct sItem *prev;
+
+    if (inv == NULL || nom == NULL)
+        return 0;
+
+    prev = NULL;
+    cur = inv->debut;
+
+    while (cur != NULL) {
         if (strncmp(cur->nom, nom, NOM_MAX) == 0) {
-            if (cur->quantite < qte) return 0;
+            /* on ne peut pas retirer plus que ce qu'on a */
+            if (cur->quantite < qte)
+                return 0;
+
             cur->quantite -= qte;
+
+            /* si quantite tombe a 0, on supprime le noeud */
             if (cur->quantite == 0) {
-                if (prev)
+                if (prev != NULL)
                     prev->suiv = cur->suiv;
                 else
                     inv->debut = cur->suiv;
@@ -83,13 +119,20 @@ int InventaireRetirer(tInventaire inv, const char *nom, int qte) {
         prev = cur;
         cur = cur->suiv;
     }
+
     return 0;
 }
 
-int InventaireQuantite(const tInventaire inv, const char *nom) {
-    if (!inv || !nom) return 0;
-    struct sItem *cur = inv->debut;
-    while (cur) {
+
+int InventaireQuantite(const tInventaire inv, const char *nom)
+{
+    struct sItem *cur;
+
+    if (inv == NULL || nom == NULL)
+        return 0;
+
+    cur = inv->debut;
+    while (cur != NULL) {
         if (strncmp(cur->nom, nom, NOM_MAX) == 0)
             return cur->quantite;
         cur = cur->suiv;
@@ -97,50 +140,78 @@ int InventaireQuantite(const tInventaire inv, const char *nom) {
     return 0;
 }
 
-int InventaireCompter(const tInventaire inv) {
-    if (!inv) return 0;
-    int n = 0;
-    struct sItem *cur = inv->debut;
-    while (cur) {
+
+int InventaireCompter(const tInventaire inv)
+{
+    struct sItem *cur;
+    int n;
+
+    if (inv == NULL)
+        return 0;
+
+    n = 0;
+    cur = inv->debut;
+    while (cur != NULL) {
         n++;
         cur = cur->suiv;
     }
     return n;
 }
 
-char *InventaireVersChaine(const tInventaire inv) {
-    if (!inv || !inv->debut) {
-        char *s = malloc(5);
-        if (!s) return NULL;
-        strcpy(s, "vide");
-        return s;
+
+char *InventaireVersChaine(const tInventaire inv)
+{
+    struct sItem *cur;
+    char *res;
+    char buf[NOM_MAX + 16];
+    int n;
+    size_t taille;
+    int premier;
+
+    if (inv == NULL || inv->debut == NULL) {
+        res = malloc(5);
+        if (res == NULL)
+            return NULL;
+        strcpy(res, "vide");
+        return res;
     }
 
-    int n = InventaireCompter(inv);
-    size_t taille = (size_t)n * (NOM_MAX + 6) + 1;
-    char *res = malloc(taille);
-    if (!res) return NULL;
+    /* on calcule la taille necessaire */
+    n = InventaireCompter(inv);
+    taille = (size_t)n * (NOM_MAX + 8) + 1;
+
+    res = malloc(taille);
+    if (res == NULL)
+        return NULL;
 
     res[0] = '\0';
-    struct sItem *cur = inv->debut;
-    int premier = 1;
-    while (cur) {
-        if (!premier) strcat(res, ", ");
-        char buf[NOM_MAX + 8];
+    premier = 1;
+    cur = inv->debut;
+
+    while (cur != NULL) {
+        if (!premier)
+            strcat(res, ", ");
         snprintf(buf, sizeof(buf), "%s(%d)", cur->nom, cur->quantite);
         strcat(res, buf);
         premier = 0;
         cur = cur->suiv;
     }
+
     return res;
 }
 
+
 int InventaireVisiter(const tInventaire inv,
-                      int (*visiter)(const char *, int, void *),
-                      void *contexte) {
-    if (!inv || !visiter) return 1;
-    struct sItem *cur = inv->debut;
-    while (cur) {
+                      int (*visiter)(const char *nom, int quantite, void *contexte),
+                      void *contexte)
+{
+    struct sItem *cur;
+
+    if (inv == NULL || visiter == NULL)
+        return 1;
+
+    cur = inv->debut;
+    while (cur != NULL) {
         if (!visiter(cur->nom, cur->quantite, contexte))
             return 0;
         cur = cur->suiv;

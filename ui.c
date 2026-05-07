@@ -1,194 +1,200 @@
-#include "ui.h"
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include "ui.h"
 
-#define RED     "\x1b[31m"
-#define GREEN   "\x1b[32m"
-#define YELLOW  "\x1b[33m"
-#define BLUE    "\x1b[34m"
-#define MAGENTA "\x1b[35m"
-#define CYAN    "\x1b[36m"
-#define RESET   "\x1b[0m"
-
-/* ==============================
-   Structure privée
-   ============================== */
 struct sUI {
     char message[256];
 };
 
-/* ==============================
-   Création UI
-   ============================== */
-tUI UI_Creer(void) {
 
+tUI UI_Creer(void)
+{
     tUI ui = malloc(sizeof(struct sUI));
-    if (!ui) return NULL;
+    if (ui == NULL)
+        return NULL;
     ui->message[0] = '\0';
     return ui;
 }
 
-/* ==============================
-   Destruction UI
-   ============================== */
-void UI_Liberer(tUI *pui) {
 
-    if (pui && *pui) {
-        free(*pui);
-        *pui = NULL;
-    }
+void UI_Liberer(tUI *pui)
+{
+    if (pui == NULL || *pui == NULL)
+        return;
+    free(*pui);
+    *pui = NULL;
 }
 
-/* ==============================
-   Message
-   ============================== */
-void UI_DefinirMessage(tUI ui, const char *fmt, ...) {
 
-    if (!ui || !fmt) return;
+void UI_DefinirMessage(tUI ui, const char *fmt, ...)
+{
     va_list ap;
+
+    if (ui == NULL || fmt == NULL)
+        return;
+
     va_start(ap, fmt);
     vsnprintf(ui->message, sizeof(ui->message), fmt, ap);
     va_end(ap);
 }
 
-/* ---- Affichage mini carte ---- */
-static void render_map(tDonjon d, tJoueur j) {
 
-    // cadre + - |, intérieur w*h
-    // règles: @, #, ?, ., E (niveau 1 => pas d’ennemis, donc jamais E)
-    int w = DonjonW(d), h = DonjonH(d);
+/* affiche la mini-carte du donjon */
+static void afficher_carte(tDonjon d, tJoueur j)
+{
+    int w, h;
     int jx, jy;
+    int x, y;
+    tSalle s;
+    char c;
+
+    w = DonjonW(d);
+    h = DonjonH(d);
     JoueurPosition(j, &jx, &jy);
 
-    printf("%s+", CYAN);
-    for (int x = 0; x < w; x++) printf("-");
-    printf("+%s\n", RESET);
+    /* bord haut */
+    printf("+");
+    for (x = 0; x < w; x++)
+        printf("-");
+    printf("+\n");
 
-    for (int y = 0; y < h; y++) {
-        printf("%s|%s", CYAN, RESET);
-        for (int x = 0; x < w; x++) {
-            tSalle s = DonjonSalle(d, x, y);
-            char c = '?';
+    for (y = 0; y < h; y++) {
+        printf("|");
+        for (x = 0; x < w; x++) {
+            s = DonjonSalle(d, x, y);
+
             if (jx == x && jy == y) {
                 c = '@';
-            } else if (!s || !SalleExiste(s)) {
+            } else if (s == NULL || !SalleExiste(s)) {
                 c = '#';
             } else if (!SalleEstVisitee(s)) {
                 c = '?';
 #ifndef NIV01
-            } else if (SalleEnnemi(s) && EnnemiEstVivant(SalleEnnemi(s))) {
+            } else if (SalleEnnemi(s) != NULL && EnnemiEstVivant(SalleEnnemi(s))) {
                 c = 'E';
 #endif
             } else {
                 c = '.';
             }
-            if (c == '@') {
-                printf("%s%c%s", RED, c, RESET);
-            }
-            else if (c == '#') {
-                printf("%s%c%s", GREEN, c, RESET);
-            } else {
-                printf("%c", c);
-            }
+            printf("%c", c);
         }
-        printf("%s|%s\n", CYAN, RESET);
+        printf("|\n");
     }
 
-    printf("%s+", CYAN);
-    for (int x = 0; x < w; x++) printf("-");
-    printf("+%s\n", RESET);
+    /* bord bas */
+    printf("+");
+    for (x = 0; x < w; x++)
+        printf("-");
+    printf("+\n");
 }
 
-/* ---- Bloc salle ---- */
-static void render_room(tDonjon d, tJoueur j) {
 
+/* affiche les infos de la salle courante */
+static void afficher_salle(tDonjon d, tJoueur j)
+{
     int jx, jy;
+    tSalle s;
+    char *txt;
+    int k;
+    const int dx[4] = { 0,  1,  0, -1 };
+    const int dy[4] = { -1,  0,  1,  0 };
+    const char *labels[4] = { "N", "E", "S", "W" };
+    int sorties;
+
     JoueurPosition(j, &jx, &jy);
-    tSalle s = DonjonSalle(d, jx, jy);
-    if (!s) {
-        fprintf(stderr, "ERREUR: impossible de trouver la salle dans laquelle est le joueur.\n");
+    s = DonjonSalle(d, jx, jy);
+
+    if (s == NULL) {
+        fprintf(stderr, "ERREUR: salle introuvable.\n");
         return;
     }
-    int id = jy * DonjonW(d) + jx;
 
-    printf("ROOM [id=%d] (x=%d y=%d)\n", id, jx, jy);
-    printf("Desc: %s\n", s ? SalleDescription(s) : "");
+    printf("Salle (%d,%d) : %s\n", jx, jy, SalleDescription(s));
 
-    // sorties NESW si case voisine existe
-    printf("Exits:");
-    int any = 0;
-    const int dx[4] = {0, 1, 0, -1};
-    const int dy[4] = {-1, 0, 1, 0};
-    const char *lab[4] = {" N", " E", " S", " W"};
-    for (int k = 0; k < 4; k++) {
-        tSalle v = DonjonSalle(d, jx + dx[k], jy + dy[k]);
-        if (v && SalleExiste(v)) { printf("%s", lab[k]); any = 1; }
+    /* sorties disponibles */
+    printf("Sorties :");
+    sorties = 0;
+    for (k = 0; k < 4; k++) {
+        tSalle voisin = DonjonSalle(d, jx + dx[k], jy + dy[k]);
+        if (voisin != NULL && SalleExiste(voisin)) {
+            printf(" %s", labels[k]);
+            sorties = 1;
+        }
     }
-    if (!any) printf(" (none)");
+    if (!sorties)
+        printf(" aucune");
     printf("\n");
 
-    // objets au sol
-    char *txt = InventaireVersChaine(SalleObjets(s));
-    printf("Items: %s\n", txt);
+    /* objets au sol */
+    txt = InventaireVersChaine(SalleObjets(s));
+    printf("Objets au sol : %s\n", txt);
     free(txt);
 
-    // ennemi
 #ifndef NIV01
-    if (!SalleEnnemi(s))
-        printf("Enemy: aucun\n");
-    else {
+    if (SalleEnnemi(s) == NULL) {
+        printf("Ennemi : aucun\n");
+    } else {
         tEnnemi e = SalleEnnemi(s);
-        printf("Enemy: %s (pv=%d/%d, atk=%d, def=%d)\n",
-            EnnemiNom(e), EnnemiPV(e), EnnemiPVMax(e), EnnemiAttaque(e), EnnemiDefense(e));
+        printf("Ennemi : %s  PV=%d/%d  ATK=%d  DEF=%d\n",
+               EnnemiNom(e), EnnemiPV(e), EnnemiPVMax(e),
+               EnnemiAttaque(e), EnnemiDefense(e));
     }
 #endif
 }
 
-/* ---- Bloc joueur ---- */
-static void render_player(const tUI ui, const tJoueur j) {
 
-    printf("PLAYER pv=%d/%d atk=%d def=%d\n",
-        JoueurPV(j), JoueurPVMax(j), JoueurAttaque(j), JoueurDefense(j));
+/* affiche l'etat du joueur */
+static void afficher_joueur(tUI ui, tJoueur j)
+{
+    char *txt;
 
-    char *txt = InventaireVersChaine(JoueurInventaire(j));
-    printf("Inv: %s\n", txt);
+    printf("Joueur : PV=%d/%d  ATK=%d  DEF=%d\n",
+           JoueurPV(j), JoueurPVMax(j),
+           JoueurAttaque(j), JoueurDefense(j));
+
+    txt = InventaireVersChaine(JoueurInventaire(j));
+    printf("Inventaire : %s\n", txt);
     free(txt);
-    printf("Msg: %s\n", ui->message[0] ? ui->message : "(none)");
+
+    if (ui->message[0] != '\0')
+        printf(">> %s\n", ui->message);
 }
 
-/* ==============================
-   Affichage global
-   ============================== */
-void UI_Afficher(tUI ui, tDonjon d, tJoueur j) {
 
-    printf("==================== DUNGEON EXPLORER ====================\n");
-    render_map(d, j);
+void UI_Afficher(tUI ui, tDonjon d, tJoueur j)
+{
+    printf("\n========== DONJON ==========\n");
+    afficher_carte(d, j);
     printf("\n");
-    render_room(d, j);
+    afficher_salle(d, j);
     printf("\n");
-    render_player(ui, j);
-    printf("\n");
-    printf("> ");
+    afficher_joueur(ui, j);
+    printf("\n> ");
     fflush(stdout);
 }
 
-/* ==============================
-   Lecture ligne
-   ============================== */
-char *UI_LireLigne(tUI ui) {
 
-    (void) ui;
-    // fgets dans buffer, puis allocation au plus juste
+char *UI_LireLigne(tUI ui)
+{
     char buf[256];
-    if (!fgets(buf, sizeof(buf), stdin)) return NULL;
+    char *s;
+    size_t len;
 
-    size_t len = strlen(buf);
-    if (len && buf[len-1] == '\n') buf[len-1] = '\0';
+    (void)ui;
 
-    char *s = malloc(strlen(buf) + 1);
-    if (!s) return NULL;
+    if (fgets(buf, sizeof(buf), stdin) == NULL)
+        return NULL;
+
+    len = strlen(buf);
+    if (len > 0 && buf[len - 1] == '\n')
+        buf[len - 1] = '\0';
+
+    s = malloc(strlen(buf) + 1);
+    if (s == NULL)
+        return NULL;
+
     strcpy(s, buf);
     return s;
 }

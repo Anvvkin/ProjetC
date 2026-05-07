@@ -1,85 +1,143 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "donjon.h"
 #include "ennemi.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 
 struct sDonjon {
     int w, h;
     tSalle *cases;
 };
 
-tDonjon DonjonCreer(int w, int h) {
-    if (w <= 0 || h <= 0) return NULL;
-    tDonjon d = malloc(sizeof(struct sDonjon));
-    if (!d) return NULL;
+
+tDonjon DonjonCreer(int w, int h)
+{
+    tDonjon d;
+
+    if (w <= 0 || h <= 0)
+        return NULL;
+
+    d = malloc(sizeof(struct sDonjon));
+    if (d == NULL)
+        return NULL;
+
     d->w = w;
     d->h = h;
-    d->cases = malloc((size_t)w * h * sizeof(tSalle));
-    if (!d->cases) {
+
+    d->cases = malloc((size_t)w * (size_t)h * sizeof(tSalle));
+    if (d->cases == NULL) {
         free(d);
         return NULL;
     }
+
     return d;
 }
 
-void DonjonLiberer(tDonjon *pd) {
-    if (!pd || !*pd) return;
-    int n = (*pd)->w * (*pd)->h;
-    for (int i = 0; i < n; i++)
+
+void DonjonLiberer(tDonjon *pd)
+{
+    int i, n;
+
+    if (pd == NULL || *pd == NULL)
+        return;
+
+    n = (*pd)->w * (*pd)->h;
+    for (i = 0; i < n; i++)
         SalleLiberer(&(*pd)->cases[i]);
+
     free((*pd)->cases);
     free(*pd);
     *pd = NULL;
 }
 
-int DonjonH(const tDonjon d) { return d ? d->h : 0; }
-int DonjonW(const tDonjon d) { return d ? d->w : 0; }
 
-tSalle DonjonSalle(const tDonjon d, int x, int y) {
-    if (!d || x < 0 || x >= d->w || y < 0 || y >= d->h)
+int DonjonW(const tDonjon d)
+{
+    if (d == NULL)
+        return 0;
+    return d->w;
+}
+
+
+int DonjonH(const tDonjon d)
+{
+    if (d == NULL)
+        return 0;
+    return d->h;
+}
+
+
+tSalle DonjonSalle(const tDonjon d, int x, int y)
+{
+    if (d == NULL)
+        return NULL;
+    if (x < 0 || x >= d->w || y < 0 || y >= d->h)
         return NULL;
     return d->cases[y * d->w + x];
 }
 
-int DonjonCharger(const char *fichier, tDonjon *dj, int *departX, int *departY) {
-    if (!fichier || !dj || !departX || !departY) return 0;
 
-    FILE *f = fopen(fichier, "r");
-    if (!f) return 0;
-
+int DonjonCharger(const char *fichier, tDonjon *dj, int *departX, int *departY)
+{
+    FILE *f;
     char ligne[512];
-
-    if (!fgets(ligne, sizeof(ligne), f)) { fclose(f); return 0; }
     int w, h;
-    if (sscanf(ligne, "%d %d", &w, &h) != 2) { fclose(f); return 0; }
+    int x, y;
+    char c;
+    tDonjon d;
+    tSalle s;
 
-    tDonjon d = DonjonCreer(w, h);
-    if (!d) { fclose(f); return 0; }
+    if (fichier == NULL || dj == NULL || departX == NULL || departY == NULL)
+        return 0;
+
+    f = fopen(fichier, "r");
+    if (f == NULL)
+        return 0;
+
+    /* lecture des dimensions */
+    if (fgets(ligne, sizeof(ligne), f) == NULL) {
+        fclose(f);
+        return 0;
+    }
+    if (sscanf(ligne, "%d %d", &w, &h) != 2) {
+        fclose(f);
+        return 0;
+    }
+
+    d = DonjonCreer(w, h);
+    if (d == NULL) {
+        fclose(f);
+        return 0;
+    }
 
     *departX = 0;
     *departY = 0;
 
-    for (int y = 0; y < h; y++) {
-        if (!fgets(ligne, sizeof(ligne), f)) {
+    /* lecture de la grille */
+    for (y = 0; y < h; y++) {
+        if (fgets(ligne, sizeof(ligne), f) == NULL) {
             DonjonLiberer(&d);
             fclose(f);
             return 0;
         }
-        for (int x = 0; x < w; x++) {
-            char c = (x < (int)strlen(ligne)) ? ligne[x] : '.';
-            tSalle s;
+        for (x = 0; x < w; x++) {
+            if (x < (int)strlen(ligne))
+                c = ligne[x];
+            else
+                c = '.';
+
             if (c == '#') {
                 s = SalleCreerMur();
             } else {
                 s = SalleCreerVide();
-                if (s && c == '@') {
+                if (s != NULL && c == '@') {
                     *departX = x;
                     *departY = y;
                     SalleVisiter(s);
                 }
             }
-            if (!s) {
+
+            if (s == NULL) {
                 DonjonLiberer(&d);
                 fclose(f);
                 return 0;
@@ -88,38 +146,41 @@ int DonjonCharger(const char *fichier, tDonjon *dj, int *departX, int *departY) 
         }
     }
 
-    // lecture des directives optionnelles
-    while (fgets(ligne, sizeof(ligne), f)) {
+    /* lecture des directives optionnelles (DESC, ITEM, ENEMY) */
+    while (fgets(ligne, sizeof(ligne), f) != NULL) {
+        /* on enleve le retour a la ligne */
         size_t len = strlen(ligne);
         while (len > 0 && (ligne[len-1] == '\n' || ligne[len-1] == '\r'))
             ligne[--len] = '\0';
 
-        int x, y, offset;
-        char nom[NOM_MAX];
-        int qte;
-
         if (strncmp(ligne, "DESC ", 5) == 0) {
+            int offset = 0;
             if (sscanf(ligne + 5, "%d %d %n", &x, &y, &offset) >= 2) {
-                tSalle s = DonjonSalle(d, x, y);
-                if (s && SalleExiste(s))
+                s = DonjonSalle(d, x, y);
+                if (s != NULL && SalleExiste(s))
                     SalleMajDescription(s, ligne + 5 + offset);
             }
         } else if (strncmp(ligne, "ITEM ", 5) == 0) {
+            char nom[NOM_MAX];
+            int qte;
             if (sscanf(ligne + 5, "%d %d %31s %d", &x, &y, nom, &qte) == 4) {
-                tSalle s = DonjonSalle(d, x, y);
-                if (s && SalleExiste(s))
+                s = DonjonSalle(d, x, y);
+                if (s != NULL && SalleExiste(s))
                     InventaireAjouter(SalleObjets(s), nom, qte);
             }
         } else if (strncmp(ligne, "ENEMY ", 6) == 0) {
+            char nom[NOM_MAX];
             int pv, atk, def;
             if (sscanf(ligne + 6, "%d %d %31s %d %d %d", &x, &y, nom, &pv, &atk, &def) == 6) {
-                tSalle s = DonjonSalle(d, x, y);
-                if (s && SalleExiste(s)) {
+                s = DonjonSalle(d, x, y);
+                if (s != NULL && SalleExiste(s)) {
                     tEnnemi e = EnnemiCreer(nom, pv, atk, def);
-                    if (e) SalleAjouterEnnemi(s, e);
+                    if (e != NULL)
+                        SalleAjouterEnnemi(s, e);
                 }
             }
         }
+        /* les lignes inconnues sont ignorees */
     }
 
     fclose(f);

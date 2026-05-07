@@ -3,8 +3,6 @@
 
 #include "joueur.h"
 
-#define NOM_MAX 32
-
 typedef struct sEnnemi *tEnnemi;
 
 tEnnemi EnnemiCreer(const char *nom, int pvMax, int atk, int def);

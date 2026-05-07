@@ -1,5 +1,5 @@
 CC     = gcc
-CFLAGS = -Wall -Wextra
+CFLAGS = -Wall -Wextra -Werror
 
 all: donjon
 
@@ -16,6 +16,6 @@ test_donjon: test_donjon.o inventaire.o joueur.o salle.o donjon.o ennemi.o ui.o
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f *.o test_inventaire test_donjon donjon
+	rm -f *.o donjon test_inventaire test_donjon
 
 .PHONY: all clean
