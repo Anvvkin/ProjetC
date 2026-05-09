@@ -9,31 +9,25 @@ struct sJoueur {
 };
 
 
-tJoueur JoueurCreer(int x, int y)
-{
-    tJoueur j = malloc(sizeof(struct sJoueur));
+tJoueur JoueurCreer(int x, int y) {
+    tJoueur j = (tJoueur) malloc(sizeof(struct sJoueur));
     if (j == NULL)
         return NULL;
-
     j->x    = x;
     j->y    = y;
     j->pv   = 20;
     j->pvMax = 20;
     j->atk  = 5;
     j->def  = 1;
-
-    j->inv = InventaireCreer();
+    j->inv  = InventaireCreer();
     if (j->inv == NULL) {
         free(j);
         return NULL;
     }
-
     return j;
 }
 
-
-void JoueurLiberer(tJoueur *pj)
-{
+void JoueurLiberer(tJoueur *pj) {
     if (pj == NULL || *pj == NULL)
         return;
     InventaireLiberer(&(*pj)->inv);
@@ -41,70 +35,26 @@ void JoueurLiberer(tJoueur *pj)
     *pj = NULL;
 }
 
-
-void JoueurPosition(const tJoueur j, int *px, int *py)
-{
-    if (j == NULL)
-        return;
-    if (px != NULL)
-        *px = j->x;
-    if (py != NULL)
-        *py = j->y;
+void JoueurPosition(const tJoueur j, int *px, int *py) {
+    if (j == NULL) return;
+    if (px != NULL) *px = j->x;
+    if (py != NULL) *py = j->y;
 }
 
+int JoueurPV(const tJoueur j)      { return j->pv;    }
+int JoueurPVMax(const tJoueur j)   { return j->pvMax; }
+int JoueurAttaque(const tJoueur j) { return j->atk;   }
+int JoueurDefense(const tJoueur j) { return j->def;   }
 
-int JoueurPV(const tJoueur j)
-{
-    if (j == NULL)
-        return 0;
-    return j->pv;
-}
+tInventaire JoueurInventaire(const tJoueur j) { return j->inv; }
 
-
-int JoueurPVMax(const tJoueur j)
-{
-    if (j == NULL)
-        return 0;
-    return j->pvMax;
-}
-
-
-int JoueurAttaque(const tJoueur j)
-{
-    if (j == NULL)
-        return 0;
-    return j->atk;
-}
-
-
-int JoueurDefense(const tJoueur j)
-{
-    if (j == NULL)
-        return 0;
-    return j->def;
-}
-
-
-tInventaire JoueurInventaire(const tJoueur j)
-{
-    if (j == NULL)
-        return NULL;
-    return j->inv;
-}
-
-
-void JoueurMajPos(tJoueur j, int x, int y)
-{
-    if (j == NULL)
-        return;
+void JoueurMajPos(tJoueur j, int x, int y) {
+    if (j == NULL) return;
     j->x = x;
     j->y = y;
 }
 
-
-void JoueurMajPV(tJoueur j, int pv)
-{
-    if (j == NULL)
-        return;
+void JoueurMajPV(tJoueur j, int pv) {
+    if (j == NULL) return;
     j->pv = pv;
 }
