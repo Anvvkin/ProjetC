@@ -4,21 +4,18 @@
 
 int main(int argc, char *argv[])
 {
-    struct sJeu *g;
-
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <fichier_donjon>\n", argv[0]);
-        return 1;
+        return EXIT_FAILURE;
     }
 
-    g = JeuCreer(argv[1]);
+    struct sJeu *g = JeuCreer(argv[1]);
     if (g == NULL) {
-        fprintf(stderr, "Erreur : impossible de charger le donjon '%s'.\n", argv[1]);
-        return 1;
+        fprintf(stderr, "Erreur chargement donjon '%s'\n", argv[1]);
+        return EXIT_FAILURE;
     }
 
     JeuJouer(g);
     JeuLiberer(g);
-
-    return 0;
+    return EXIT_SUCCESS;
 }

@@ -10,23 +10,27 @@ struct sDonjon {
 };
 
 
-tDonjon DonjonCreer(int w, int h) {
+tDonjon DonjonCreer(int w, int h)
+{
     if (w <= 0 || h <= 0)
         return NULL;
-    tDonjon d = (tDonjon) malloc(sizeof(struct sDonjon));
+
+    tDonjon d = (tDonjon)malloc(sizeof(struct sDonjon));
     if (d == NULL)
         return NULL;
-    d->w = w;
-    d->h = h;
-    d->cases = (tSalle *) malloc((size_t)w * h * sizeof(tSalle));
+
+    d->cases = (tSalle *)malloc((size_t)w * (size_t)h * sizeof(tSalle));
     if (d->cases == NULL) {
         free(d);
         return NULL;
     }
+    d->w = w;
+    d->h = h;
     return d;
 }
 
-void DonjonLiberer(tDonjon *pd) {
+void DonjonLiberer(tDonjon *pd)
+{
     if (pd == NULL || *pd == NULL)
         return;
     int n = (*pd)->w * (*pd)->h;
@@ -40,13 +44,15 @@ void DonjonLiberer(tDonjon *pd) {
 int DonjonW(const tDonjon d) { return d->w; }
 int DonjonH(const tDonjon d) { return d->h; }
 
-tSalle DonjonSalle(const tDonjon d, int x, int y) {
+tSalle DonjonSalle(const tDonjon d, int x, int y)
+{
     if (d == NULL || x < 0 || x >= d->w || y < 0 || y >= d->h)
         return NULL;
     return d->cases[y * d->w + x];
 }
 
-int DonjonCharger(const char *fichier, tDonjon *dj, int *departX, int *departY) {
+int DonjonCharger(const char *fichier, tDonjon *dj, int *departX, int *departY)
+{
     if (fichier == NULL || dj == NULL || departX == NULL || departY == NULL)
         return 0;
 
@@ -55,13 +61,22 @@ int DonjonCharger(const char *fichier, tDonjon *dj, int *departX, int *departY) 
         return 0;
 
     char ligne[512];
-    if (fgets(ligne, sizeof(ligne), f) == NULL) { fclose(f); return 0; }
+    if (fgets(ligne, sizeof(ligne), f) == NULL) {
+        fclose(f);
+        return 0;
+    }
 
     int w, h;
-    if (sscanf(ligne, "%d %d", &w, &h) != 2) { fclose(f); return 0; }
+    if (sscanf(ligne, "%d %d", &w, &h) != 2) {
+        fclose(f);
+        return 0;
+    }
 
     tDonjon d = DonjonCreer(w, h);
-    if (d == NULL) { fclose(f); return 0; }
+    if (d == NULL) {
+        fclose(f);
+        return 0;
+    }
 
     *departX = 0;
     *departY = 0;
@@ -99,9 +114,9 @@ int DonjonCharger(const char *fichier, tDonjon *dj, int *departX, int *departY) 
         while (len > 0 && (ligne[len-1] == '\n' || ligne[len-1] == '\r'))
             ligne[--len] = '\0';
 
-        int x, y, offset;
+        int x, y;
         if (strncmp(ligne, "DESC ", 5) == 0) {
-            offset = 0;
+            int offset = 0;
             if (sscanf(ligne + 5, "%d %d %n", &x, &y, &offset) >= 2) {
                 tSalle s = DonjonSalle(d, x, y);
                 if (s != NULL && SalleExiste(s))

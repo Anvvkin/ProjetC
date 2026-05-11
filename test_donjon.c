@@ -17,33 +17,30 @@ int main(int argc, char *argv[])
     }
 
     if (!DonjonCharger(argv[1], &d, &dx, &dy)) {
-        fprintf(stderr, "Erreur : impossible de charger '%s'.\n", argv[1]);
+        fprintf(stderr, "Erreur chargement '%s'\n", argv[1]);
         return 1;
     }
 
     j = JoueurCreer(dx, dy);
     if (j == NULL) {
-        fprintf(stderr, "Erreur : impossible de creer le joueur.\n");
+        fprintf(stderr, "Erreur creation joueur\n");
         DonjonLiberer(&d);
         return 1;
     }
 
     ui = UI_Creer();
     if (ui == NULL) {
-        fprintf(stderr, "Erreur : impossible de creer l'interface.\n");
+        fprintf(stderr, "Erreur creation UI\n");
         JoueurLiberer(&j);
         DonjonLiberer(&d);
         return 1;
     }
 
-    printf("Donjon charge : %dx%d, depart en (%d,%d)\n",
-           DonjonW(d), DonjonH(d), dx, dy);
-
+    printf("donjon %dx%d, depart (%d,%d)\n", DonjonW(d), DonjonH(d), dx, dy);
     UI_Afficher(ui, d, j);
 
     UI_Liberer(&ui);
     JoueurLiberer(&j);
     DonjonLiberer(&d);
-
     return 0;
 }

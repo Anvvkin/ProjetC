@@ -2,8 +2,6 @@
 #include <string.h>
 #include "salle.h"
 
-#define DESC_DEFAUT "Une salle sans particularite."
-
 struct sSalle {
     int existe;
     int visitee;
@@ -13,32 +11,34 @@ struct sSalle {
 };
 
 
-tSalle SalleCreerMur(void) {
-    tSalle s = (tSalle) malloc(sizeof(struct sSalle));
+tSalle SalleCreerMur(void)
+{
+    tSalle s = (tSalle)malloc(sizeof(struct sSalle));
     if (s == NULL)
         return NULL;
-    s->existe  = 0;
+    s->existe = 0;
     s->visitee = 0;
-    s->desc    = NULL;
-    s->objets  = NULL;
-    s->ennemi  = NULL;
+    s->desc = NULL;
+    s->objets = NULL;
+    s->ennemi = NULL;
     return s;
 }
 
-tSalle SalleCreerVide(void) {
-    tSalle s = (tSalle) malloc(sizeof(struct sSalle));
+tSalle SalleCreerVide(void)
+{
+    tSalle s = (tSalle)malloc(sizeof(struct sSalle));
     if (s == NULL)
         return NULL;
-    s->existe  = 1;
+    s->existe = 1;
     s->visitee = 0;
-    s->ennemi  = NULL;
+    s->ennemi = NULL;
 
-    s->desc = (char *) malloc(strlen(DESC_DEFAUT) + 1);
+    s->desc = (char *)malloc(strlen("Une salle sans particularite.") + 1);
     if (s->desc == NULL) {
         free(s);
         return NULL;
     }
-    strcpy(s->desc, DESC_DEFAUT);
+    strcpy(s->desc, "Une salle sans particularite.");
 
     s->objets = InventaireCreer();
     if (s->objets == NULL) {
@@ -49,7 +49,8 @@ tSalle SalleCreerVide(void) {
     return s;
 }
 
-void SalleLiberer(tSalle *ps) {
+void SalleLiberer(tSalle *ps)
+{
     if (ps == NULL || *ps == NULL)
         return;
     if ((*ps)->existe) {
@@ -61,16 +62,19 @@ void SalleLiberer(tSalle *ps) {
     *ps = NULL;
 }
 
-int SalleExiste(const tSalle s)     { return s->existe;  }
-int SalleEstVisitee(const tSalle s) { return s->visitee; }
-const char *SalleDescription(const tSalle s) { return s->desc;   }
+int SalleExiste(const tSalle s)              { return s->existe; }
+int SalleEstVisitee(const tSalle s)          { return s->visitee; }
+const char *SalleDescription(const tSalle s) { return s->desc; }
 tInventaire SalleObjets(const tSalle s)      { return s->objets; }
 tEnnemi SalleEnnemi(tSalle s)                { return s->ennemi; }
 
-int SalleMajDescription(tSalle s, const char *desc) {
+int SalleMajDescription(tSalle s, const char *desc)
+{
+    char *tmp;
+
     if (s == NULL || desc == NULL || !s->existe)
         return 0;
-    char *tmp = (char *) malloc(strlen(desc) + 1);
+    tmp = (char *)malloc(strlen(desc) + 1);
     if (tmp == NULL)
         return 0;
     strcpy(tmp, desc);
@@ -79,12 +83,14 @@ int SalleMajDescription(tSalle s, const char *desc) {
     return 1;
 }
 
-void SalleVisiter(tSalle s) {
+void SalleVisiter(tSalle s)
+{
     if (s == NULL) return;
     s->visitee = 1;
 }
 
-void SalleAjouterEnnemi(tSalle s, const tEnnemi e) {
+void SalleAjouterEnnemi(tSalle s, const tEnnemi e)
+{
     if (s == NULL) return;
     s->ennemi = e;
 }
