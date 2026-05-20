@@ -62,11 +62,11 @@ void SalleLiberer(tSalle *ps)
     *ps = NULL;
 }
 
-int SalleExiste(const tSalle s)              { return s->existe; }
-int SalleEstVisitee(const tSalle s)          { return s->visitee; }
+int SalleExiste(const tSalle s) { return s->existe; }
+int SalleEstVisitee(const tSalle s) { return s->visitee; }
 const char *SalleDescription(const tSalle s) { return s->desc; }
-tInventaire SalleObjets(const tSalle s)      { return s->objets; }
-tEnnemi SalleEnnemi(tSalle s)                { return s->ennemi; }
+tInventaire SalleObjets(const tSalle s) { return s->objets; }
+tEnnemi SalleEnnemi(tSalle s) { return s->ennemi; }
 
 int SalleMajDescription(tSalle s, const char *desc)
 {

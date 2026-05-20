@@ -34,12 +34,12 @@ void EnnemiLiberer(tEnnemi *pe)
     *pe = NULL;
 }
 
-char *EnnemiNom(const tEnnemi e)       { return e->nom; }
-int   EnnemiPV(const tEnnemi e)        { return e->pv; }
-int   EnnemiPVMax(const tEnnemi e)     { return e->pvMax; }
-int   EnnemiAttaque(const tEnnemi e)   { return e->atk; }
-int   EnnemiDefense(const tEnnemi e)   { return e->def; }
-int   EnnemiEstVivant(const tEnnemi e) { return e->pv > 0; }
+char *EnnemiNom(const tEnnemi e) { return e->nom; }
+int EnnemiPV(const tEnnemi e) { return e->pv; }
+int EnnemiPVMax(const tEnnemi e) { return e->pvMax; }
+int EnnemiAttaque(const tEnnemi e) { return e->atk; }
+int EnnemiDefense(const tEnnemi e) { return e->def; }
+int EnnemiEstVivant(const tEnnemi e) { return e->pv > 0; }
 
 int EnnemiSubirAttaque(tEnnemi e, const tJoueur j)
 {

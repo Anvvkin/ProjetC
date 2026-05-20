@@ -5,7 +5,7 @@
 #include "ennemi.h"
 
 static const char MAGIC[4] = {'D', 'N', 'G', '1'};
-static const int  VERSION   = 1;
+static const int VERSION = 1;
 
 static int ecrire_objet(const char *nom, int qte, void *ctx)
 {
@@ -44,43 +44,35 @@ static int lire_inv(tInventaire inv, FILE *f)
 
 int SaveEcrire(const char *fichier, tDonjon d, tJoueur j)
 {
-    FILE *f;
-    int w, h, x, y;
-    int jx, jy, jpv;
-    tSalle s;
-    tEnnemi e;
-    unsigned char existe, visitee, has_e;
-    char nom[NOM_MAX];
-    int pv, pvMax, atk, def;
-
     if (fichier == NULL || d == NULL || j == NULL)
         return 0;
 
-    f = fopen(fichier, "wb");
+    FILE *f = fopen(fichier, "wb");
     if (f == NULL)
         return 0;
 
     fwrite(MAGIC,    4,           1, f);
     fwrite(&VERSION, sizeof(int), 1, f);
 
-    w = DonjonW(d);
-    h = DonjonH(d);
+    int w = DonjonW(d);
+    int h = DonjonH(d);
     fwrite(&w, sizeof(int), 1, f);
     fwrite(&h, sizeof(int), 1, f);
 
+    int jx, jy;
     JoueurPosition(j, &jx, &jy);
-    jpv = JoueurPV(j);
+    int jpv = JoueurPV(j);
     fwrite(&jx,  sizeof(int), 1, f);
     fwrite(&jy,  sizeof(int), 1, f);
     fwrite(&jpv, sizeof(int), 1, f);
 
     ecrire_inv(JoueurInventaire(j), f);
 
-    for (y = 0; y < h; y++) {
-        for (x = 0; x < w; x++) {
-            s = DonjonSalle(d, x, y);
-            existe  = (unsigned char)SalleExiste(s);
-            visitee = (unsigned char)SalleEstVisitee(s);
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            tSalle s = DonjonSalle(d, x, y);
+            unsigned char existe  = (unsigned char)SalleExiste(s);
+            unsigned char visitee = (unsigned char)SalleEstVisitee(s);
 
             fwrite(&existe, 1, 1, f);
             if (!existe)
@@ -89,17 +81,18 @@ int SaveEcrire(const char *fichier, tDonjon d, tJoueur j)
             fwrite(&visitee, 1, 1, f);
             ecrire_inv(SalleObjets(s), f);
 
-            e = SalleEnnemi(s);
-            has_e = (e != NULL) ? 1 : 0;
+            tEnnemi e = SalleEnnemi(s);
+            unsigned char has_e = (e != NULL) ? 1 : 0;
             fwrite(&has_e, 1, 1, f);
 
             if (has_e) {
+                char nom[NOM_MAX];
                 memset(nom, 0, NOM_MAX);
                 strncpy(nom, EnnemiNom(e), NOM_MAX - 1);
-                pv    = EnnemiPV(e);
-                pvMax = EnnemiPVMax(e);
-                atk   = EnnemiAttaque(e);
-                def   = EnnemiDefense(e);
+                int pv = EnnemiPV(e);
+                int pvMax = EnnemiPVMax(e);
+                int atk = EnnemiAttaque(e);
+                int def = EnnemiDefense(e);
 
                 fwrite(nom,    NOM_MAX,     1, f);
                 fwrite(&pv,    sizeof(int), 1, f);
@@ -117,9 +110,7 @@ int SaveEcrire(const char *fichier, tDonjon d, tJoueur j)
 
 int SaveLire(const char *fichier, tDonjon d, tJoueur j)
 {
-    FILE *f;
-    char magic[4];
-    int version, w, h, x, y;
+    int w, h, x, y;
     int jx, jy, jpv;
     tSalle s;
     tEnnemi e;
@@ -130,16 +121,18 @@ int SaveLire(const char *fichier, tDonjon d, tJoueur j)
     if (fichier == NULL || d == NULL || j == NULL)
         return 0;
 
-    f = fopen(fichier, "rb");
+    FILE *f = fopen(fichier, "rb");
     if (f == NULL)
         return 0;
 
+    char magic[4];
+    int version;
     fread(magic,    4,           1, f);
     fread(&version, sizeof(int), 1, f);
     fread(&w,       sizeof(int), 1, f);
     fread(&h,       sizeof(int), 1, f);
 
-    if (memcmp(magic, MAGIC, 4) != 0) {
+    if (memcmp(magic, MAGIC, 4) != 0 || version != VERSION) {
         fclose(f);
         return 0;
     }

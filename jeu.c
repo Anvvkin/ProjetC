@@ -55,9 +55,9 @@ static void executer_commande(struct sJeu *g, char *cmd)
         int x, y;
         JoueurPosition(g->j, &x, &y);
         tSalle s = DonjonSalle(g->d, x, y - 1);
-        if (s == NULL || !SalleExiste(s))
+        if (s == NULL || !SalleExiste(s)) {
             UI_DefinirMessage(g->ui, "Impossible d'aller dans cette direction.");
-        else {
+        } else {
             JoueurMajPos(g->j, x, y - 1);
             SalleVisiter(s);
         }
@@ -77,12 +77,12 @@ static void executer_commande(struct sJeu *g, char *cmd)
         int x, y;
         JoueurPosition(g->j, &x, &y);
         tSalle s = DonjonSalle(g->d, x + 1, y);
-        if (s == NULL || !SalleExiste(s))
+        if (s == NULL || !SalleExiste(s)) {
             UI_DefinirMessage(g->ui, "Impossible d'aller dans cette direction.");
-        else {
-            JoueurMajPos(g->j, x + 1, y);
-            SalleVisiter(s);
+            return;
         }
+        JoueurMajPos(g->j, x + 1, y);
+        SalleVisiter(s);
 
     } else if (strcmp(mot, "w") == 0) {
         int x, y;
@@ -169,9 +169,9 @@ struct sJeu *JeuCreer(const char *fichierDonjon)
     if (g == NULL)
         return NULL;
 
-    g->d    = NULL;
-    g->j    = NULL;
-    g->ui   = NULL;
+    g->d = NULL;
+    g->j = NULL;
+    g->ui = NULL;
     g->fini = 0;
 
     int dx, dy;
